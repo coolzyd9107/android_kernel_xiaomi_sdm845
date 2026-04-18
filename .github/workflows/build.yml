@@ -175,30 +175,3 @@ jobs:
           files: |
             kernel/*
             manager/*
-
-      - name: 发送Telegram通知
-        continue-on-error: true
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          COMMIT_URL: ${{ github.event.head_commit.url }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/rel-${{ steps.time.outputs.timestamp }}
-        run: |
-          msg="*CI ${{ steps.time.outputs.time }}*
-          > Branch/分支: \`${{ github.ref_name }}\`
-          \`\`\`
-          $COMMIT_MESSAGE
-          \`\`\`
-          [Download/下载]($RELEASE_URL)
-          [Commit/提交]($COMMIT_URL)
-          [Run/工作流]($RUN_URL)
-          "
-          curl -LSs https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-                      -F 'chat_id="${{ secrets.TELEGRAM_CHAT_ID }}"' \
-                      -F 'message_thread_id=${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}' \
-                      -F 'parse_mode="markdownv2"' \
-                      -F "text=\"$msg\"" | tee Markdown.txt
-          ! ${{ startsWith(github.ref_name, 'stable/') }} || \
-          curl https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/pinChatMessage \
-                      -F 'chat_id="${{ secrets.TELEGRAM_CHAT_ID }}"' \
-                      -F message_id=$(jq '.result.message_id' Markdown.txt)
